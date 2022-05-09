@@ -3,8 +3,9 @@ import copy
 import os
 import pygame
 import sys
-from joc import Joc
+from joc import Joc, distEuclid
 from butoane import Buton, GrupButoane
+from piesa import Piesa
 from stare import Stare, min_max, alpha_beta 
 ADANCIME_MAX=4
 
@@ -73,16 +74,13 @@ def main():
     pygame.init()
     pygame.display.set_caption("astar")
     #dimensiunea ferestrei in pixeli
-    nl=10
-    nc=7
     WIDTH, HEIGHT = 400, 700
-    w=50
     ecran=pygame.display.set_mode((WIDTH, HEIGHT))# N *w+ N-1= N*(w+1)-1
-    Joc.initializeaza(ecran, NR_LINII=5, NR_COLOANE=4, dim_celula=70)
+    Joc.initializeaza(ecran)
 
     #initializare tabla
-    tabla_curenta=Joc(WIDTH, HEIGHT,NR_LINII=4,NR_COLOANE=5, )
-    Joc.JMIN, tip_algoritm = deseneaza_alegeri(ecran,tabla_curenta)
+    joc_curent=Joc(WIDTH, HEIGHT,NR_LINII=4,NR_COLOANE=5, )
+    Joc.JMIN, tip_algoritm = deseneaza_alegeri(ecran,joc_curent)
     print(Joc.JMIN, tip_algoritm)
     ecran.fill((255,255,255))
 
@@ -93,102 +91,47 @@ def main():
     Joc.JMAX= '0' if Joc.JMIN == 'x' else 'x'
     
     
-
+    turn = 0
     print("Tabla initiala")
-    print(str(tabla_curenta))
+    print(str(joc_curent))
     
     # #creare stare initiala
-    # stare_curenta=Stare(tabla_curenta,'x',ADANCIME_MAX)
+    # stare_curenta=Stare(joc_curent,'x',ADANCIME_MAX)
 
-    tabla_curenta.deseneaza_grid2()
+    joc_curent.deseneaza_grid()
+    print("Muta "+ ("negru" if turn else "alb"))
     pygame.display.update()	
-
-    # while True :
-
-    # 	if (stare_curenta.j_curent==Joc.JMIN):
-            
-    # 		for event in pygame.event.get():
-    # 			if event.type== pygame.QUIT:
-    # 				#iesim din program
-    # 				pygame.quit()
-    # 				sys.exit()
-    # 			if event.type == pygame.MOUSEMOTION:
-                    
-    # 				pos = pygame.mouse.get_pos()#coordonatele cursorului
-    # 				for np in range(len(Joc.celuleGrid)):						
-    # 					if Joc.celuleGrid[np].collidepoint(pos):
-                            
-    # 							stare_curenta.tabla_joc.deseneaza_grid(coloana_marcaj=np%Joc.NR_COLOANE)
-    # 							break
-
-    # 			elif event.type == pygame.MOUSEBUTTONDOWN:
-                    
-    # 				pos = pygame.mouse.get_pos()#coordonatele cursorului la momentul clickului
-                    
-    # 				for np in range(len(Joc.celuleGrid)):
-                        
-    # 					if Joc.celuleGrid[np].collidepoint(pos):
-    # 						#linie=np//Joc.NR_COLOANE
-    # 						coloana=np%Joc.NR_COLOANE
-    # 						###############################
-                            
-    # 						if stare_curenta.tabla_joc.matr[0][coloana] == Joc.GOL:	
-    # 							niv=0
-    # 							while True:
-    # 								if niv == Joc.NR_LINII or stare_curenta.tabla_joc.matr[niv][coloana] != Joc.GOL:
-    # 									stare_curenta.tabla_joc.matr[niv - 1][coloana] = Joc.JMIN
-    # 									stare_curenta.tabla_joc.ultima_mutare=(niv-1, coloana)
-    # 									break
-    # 								niv += 1
-                                
-    # 							#afisarea starii jocului in urma mutarii utilizatorului
-    # 							print("\nTabla dupa mutarea jucatorului")
-    # 							print(str(stare_curenta))
-                                
-    # 							stare_curenta.tabla_joc.deseneaza_grid(coloana_marcaj=coloana)
-    # 							#testez daca jocul a ajuns intr-o stare finala
-    # 							#si afisez un mesaj corespunzator in caz ca da
-    # 							if (afis_daca_final(stare_curenta)):
-    # 								break
-                                    
-                                    
-    # 							#S-a realizat o mutare. Schimb jucatorul cu cel opus
-    # 							stare_curenta.j_curent=Joc.jucator_opus(stare_curenta.j_curent)
-
-
-    
-    # 	#--------------------------------
-    # 	else: #jucatorul e JMAX (calculatorul)
-    # 		#Mutare calculator
-            
-    # 		#preiau timpul in milisecunde de dinainte de mutare
-    # 		t_inainte=int(round(time.time() * 1000))
-    # 		if tip_algoritm=='minimax':
-    # 			stare_actualizata=min_max(stare_curenta)
-    # 		else: #tip_algoritm=="alphabeta"
-    # 			stare_actualizata=alpha_beta(-500, 500, stare_curenta)
-    # 		stare_curenta.tabla_joc=stare_actualizata.stare_aleasa.tabla_joc
-
-    # 		print("Tabla dupa mutarea calculatorului\n"+str(stare_curenta))
-
-    # 		#preiau timpul in milisecunde de dupa mutare
-    # 		t_dupa=int(round(time.time() * 1000))
-    # 		print("Calculatorul a \"gandit\" timp de "+str(t_dupa-t_inainte)+" milisecunde.")
-            
-    # 		stare_curenta.tabla_joc.deseneaza_grid()
-    # 		if (afis_daca_final(stare_curenta)):
-    # 			break
-                
-    # 		#S-a realizat o mutare. Schimb jucatorul cu cel opus
-    # 		stare_curenta.j_curent=Joc.jucator_opus(stare_curenta.j_curent)
-    
-if __name__ == "__main__" :
-    main()
-    while True :
-        for event in pygame.event.get():
-            if event.type== pygame.QUIT:
+    while True:
+        for ev in pygame.event.get():
+            if ev.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
+            if ev.type == pygame.MOUSEBUTTONDOWN:
+                pos = pygame.mouse.get_pos()
+                for nod in joc_curent.coordonateNoduri:
+                    if (distEuclid(*pos, *nod) < joc_curent.razaPct):
+                        nod_curent = Piesa(nod[0], nod[1])
+                        if not joc_curent.piesa_selectata and joc_curent.piesa_valida(turn, nod_curent):
+                            joc_curent.piesa_selectata = nod_curent
+                            joc_curent.deseneaza_grid()
+                        elif joc_curent.piesa_selectata and joc_curent.mutare_valida(turn, nod_curent):
+                            turn = 1 - turn
+                            joc_curent.piesa_selectata = False
+                            joc_curent.deseneaza_grid()
+                        elif joc_curent.piesa_selectata:
+                            if joc_curent.piesa_selectata in joc_curent.piese_negre and nod_curent in joc_curent.piese_negre:
+                                joc_curent.piesa_selectata = nod_curent
+                                joc_curent.deseneaza_grid()
+
+                            if joc_curent.piesa_selectata in joc_curent.piese_albe and nod_curent in joc_curent.piese_albe:
+                                joc_curent.piesa_selectata = nod_curent
+                                joc_curent.deseneaza_grid()
+
+                        
+
+                        
+if __name__ == "__main__" :
+    main()
 
 
     

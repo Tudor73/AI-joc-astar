@@ -3,20 +3,22 @@ import pygame
 import os
 
 class Piesa:
-    def __init__(self, culoare, x, y):
-        self.culoar = culoare
+
+    razaPiesa=20
+    def __init__(self, x, y):
         self.x= x
         self.y = y
     
-    def deseneaza_piesa(self, ecran):
-        image = pygame.image.load(os.path.join('images', 'black.png'))    
+    def deseneaza_piesa(self, ecran, piesa):
 
-        image_rect = image.get_rect()
-        image_rect.x = self.x
-        image_rect.y = self.y
-        ecran.blit(image, image_rect)
+        image_rect = piesa.get_rect()
+        image_rect.x = self.x - self.__class__.razaPiesa
+        image_rect.y = self.y - self.__class__.razaPiesa
+        ecran.blit(piesa, image_rect)
         pygame.display.update()
 
     def __repr__(self):
-        sir = f"{self.culoare}, ({self.x}, {self.y})"
+        sir = f"({self.x}, {self.y})"
         return sir
+    def __eq__(self, other):
+        return self.x == other.x and self.y == other.y
