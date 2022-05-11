@@ -1,3 +1,4 @@
+from random import randint, random
 import time
 import copy
 import os
@@ -79,24 +80,25 @@ def main():
     Joc.initializeaza(ecran)
 
     #initializare tabla
-    joc_curent=Joc(WIDTH, HEIGHT,NR_LINII=4,NR_COLOANE=5, )
+    joc_curent=Joc()
     Joc.JMIN, tip_algoritm = deseneaza_alegeri(ecran,joc_curent)
     print(Joc.JMIN, tip_algoritm)
+    if Joc.JMIN == "alb":
+        Joc.JMAX = "negru"
     ecran.fill((255,255,255))
 
     
 
-    pygame.display.update()	
-
-    Joc.JMAX= '0' if Joc.JMIN == 'x' else 'x'
-    
+    pygame.display.update()	    
     
     turn = 0
     print("Tabla initiala")
-    print(str(joc_curent))
     
     # #creare stare initiala
     # stare_curenta=Stare(joc_curent,'x',ADANCIME_MAX)
+
+    stare_curenta = Stare(joc_curent, Joc.JMIN, 2)
+
 
     joc_curent.deseneaza_grid()
     print("Muta "+ ("negru" if turn else "alb"))
@@ -106,28 +108,36 @@ def main():
             if ev.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
-            if ev.type == pygame.MOUSEBUTTONDOWN:
-                pos = pygame.mouse.get_pos()
-                for nod in joc_curent.coordonateNoduri:
-                    if (distEuclid(*pos, *nod) < joc_curent.razaPct):
-                        nod_curent = Piesa(nod[0], nod[1])
-                        if not joc_curent.piesa_selectata and joc_curent.piesa_valida(turn, nod_curent):
-                            joc_curent.piesa_selectata = nod_curent
-                            joc_curent.deseneaza_grid()
-                        elif joc_curent.piesa_selectata and joc_curent.mutare_valida(turn, nod_curent):
-                            turn = 1 - turn
-                            joc_curent.piesa_selectata = False
-                            joc_curent.deseneaza_grid()
-                        elif joc_curent.piesa_selectata:
-                            if joc_curent.piesa_selectata in joc_curent.piese_negre and nod_curent in joc_curent.piese_negre:
+            if stare_curenta.j_curent == Joc.JMIN:
+                if ev.type == pygame.MOUSEBUTTONDOWN:
+                    pos = pygame.mouse.get_pos()
+                    for nod in joc_curent.coordonateNoduri:
+                        if (distEuclid(*pos, *nod) < joc_curent.razaPct):
+                            nod_curent = Piesa(nod[0], nod[1])
+                            print(nod_curent)
+                            if not joc_curent.piesa_selectata and joc_curent.piesa_valida(turn, nod_curent):
                                 joc_curent.piesa_selectata = nod_curent
                                 joc_curent.deseneaza_grid()
+                            elif joc_curent.piesa_selectata and joc_curent.mutare_valida(turn, nod_curent):
+                                piese_albe = copy.deepcopy(joc_curent.piese_albe)
+                                piese_negre = copy.deepcopy(joc_curent.piese_negre)
+                                joc_nou = Joc(piese_albe, piese_negre)
+                                stare_curenta = Stare(joc_nou, Joc.JMAX, stare_curenta.adancime)
+                                joc_nou.deseneaza_grid()
+                            elif joc_curent.piesa_selectata:
+                                if joc_curent.piesa_selectata in joc_curent.piese_negre and nod_curent in joc_curent.piese_negre:
+                                    joc_curent.piesa_selectata = nod_curent
+                                    joc_curent.deseneaza_grid()
 
-                            if joc_curent.piesa_selectata in joc_curent.piese_albe and nod_curent in joc_curent.piese_albe:
-                                joc_curent.piesa_selectata = nod_curent
-                                joc_curent.deseneaza_grid()
-
-                        
+                                if joc_curent.piesa_selectata in joc_curent.piese_albe and nod_curent in joc_curent.piese_albe:
+                                    joc_curent.piesa_selectata = nod_curent
+                                    joc_curent.deseneaza_grid()
+            else:
+                l_mutari_posibile = stare_curenta.mutari()
+                index = randint(0, len(l_mutari_posibile)-1)
+                stare_curenta = l_mutari_posibile[index]
+                stare_curenta.tabla_joc.deseneaza_grid()
+                joc_curent = stare_curenta.tabla_joc                    
 
                         
 if __name__ == "__main__" :

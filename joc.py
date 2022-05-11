@@ -1,3 +1,4 @@
+from tabnanny import check
 import pygame
 import copy
 import math 
@@ -6,7 +7,7 @@ import os
 from piesa import Piesa
 
 def distEuclid(x0,y0,x1,y1):
-    return math.sqrt((x0-x1)**2+(y0-y1)**2)
+    return math.sqrt((x0-x1)**2+(y0-y1)**2)                 
 
 
 class Joc:
@@ -32,24 +33,27 @@ class Joc:
     JMAX=None
     scor_maxim=0
     razaPiesa=20
+    width = 400
+    height = 700
     culoare_ecran = (255,255,255)
-    def __init__(self,  width, height, matr=None, NR_LINII=None, NR_COLOANE=None):
+    def __init__(self, piese_albe = None, piese_negre = None):
         #creez proprietatea ultima_mutare # (l,c)
         self.ultima_mutare=None
-        self.width = width
-        self.height = height
         self.scalare=60
         self.translatie=30
         self.razaPct=10
         self.piesa_selectata = False
         self.coordonateNoduri=[[self.translatie + self.scalare * x for x in nod] for nod in self.noduri]
-        self.piese_negre = [Piesa(*self.coordonateNoduri[i]) for i in range(13)]
-        for i in range(14,17):
-            self.piese_negre.append(Piesa(*self.coordonateNoduri[i]))
-
-        self.piese_albe = [Piesa(*self.coordonateNoduri[i]) for i in range(33, len(self.__class__.noduri))]
-        for i in range(29,32):
-            self.piese_albe.append(Piesa(*self.coordonateNoduri[i]))
+        self.piese_albe = piese_albe
+        self.piese_negre = piese_negre
+        if not self.piese_negre:
+            self.piese_negre = [Piesa(*self.coordonateNoduri[i]) for i in range(13)]
+            for i in range(14,17):
+                self.piese_negre.append(Piesa(*self.coordonateNoduri[i]))
+        if not self.piese_albe:
+            self.piese_albe = [Piesa(*self.coordonateNoduri[i]) for i in range(33, len(self.__class__.noduri))]
+            for i in range(29,32):
+                self.piese_albe.append(Piesa(*self.coordonateNoduri[i]))
         self.piese_totale = self.piese_albe + self.piese_negre
 
     def deseneaza_grid(self):
@@ -77,6 +81,18 @@ class Joc:
             return True
         return False
 
+    def gaseste_piesa(self, nod):
+        nod_nou = copy.deepcopy(self.piesa_selectata)
+        if self.piesa_selectata.x == nod.x:
+            y_dif = self.piesa_selectata.y - nod.y
+            nod_nou.y -= y_dif//2
+            return nod_nou
+        elif self.piesa_selectata.y == nod.y:
+            x_dif = self.piesa_selectata.x - nod.x
+            nod_nou.x -= x_dif//2
+            return nod_nou
+        return False
+
     def mutare_valida(self, turn, nod):
         if distEuclid(self.piesa_selectata.x, self.piesa_selectata.y, nod.x, nod.y)  != 60 and distEuclid(self.piesa_selectata.x, self.piesa_selectata.y, nod.x, nod.y)   != 120 :
             return False
@@ -91,15 +107,16 @@ class Joc:
                 self.piesa_selectata = nod
                 return False
             if distEuclid(self.piesa_selectata.x, self.piesa_selectata.y, nod.x, nod.y)  == 120:
-                nod_aux1 = copy.deepcopy(nod)
-                nod_aux2 = copy.deepcopy(nod)
-                if self.piesa_selectata.x == nod.x:
-                    nod_aux1.y = nod_aux1.y-60
-                    nod_aux2.y = nod_aux2.y+60
-                elif self.piesa_selectata.y == nod.y:
-                    nod_aux1.x = nod_aux1.x + 60
-                    nod_aux2.x = nod_aux2.x - 60
-                return self.check_for_capture(nod, nod_aux1) or self.check_for_capture(nod, nod_aux2)
+                nod_nou = self.gaseste_piesa(nod)
+                print(nod_nou)
+                captura, mutare = self.check_for_capture2(self.piesa_selectata, nod_nou)
+                if captura:
+                    self.piese_albe.remove(self.piesa_selectata)
+                    self.piese_negre.remove(captura)
+                    self.piese_albe.append(mutare)
+                    self.piese_totale = self.piese_albe + self.piese_negre
+                    return True
+                return False
             else:
                 self.piese_albe.remove(self.piesa_selectata)
                 self.piese_albe.append(nod)
@@ -110,43 +127,119 @@ class Joc:
                 self.piesa_selectata = nod
                 return False
             if distEuclid(self.piesa_selectata.x, self.piesa_selectata.y, nod.x, nod.y)   == 120:
-                nod_aux1 = copy.deepcopy(nod)
-                nod_aux2 = copy.deepcopy(nod)
-                if self.piesa_selectata.x == nod.x:
-                    nod_aux1.y = nod_aux1.y-60
-                    nod_aux2.y = nod_aux2.y+60
-                elif self.piesa_selectata.y == nod.y:
-                    nod_aux1.x = nod_aux1.x + 60
-                    nod_aux2.x = nod_aux2.x - 60
-
-
-                return self.check_for_capture(nod, nod_aux1) or self.check_for_capture(nod, nod_aux2)
+                nod_nou = self.gaseste_piesa(nod)
+                captura, mutare = self.check_for_capture2(self.piesa_selectata, nod_nou)
+                if captura:
+                    self.piese_negre.remove(self.piesa_selectata)
+                    self.piese_albe.remove(captura)
+                    self.piese_negre.append(mutare)
+                    self.piese_totale = self.piese_albe + self.piese_negre
+                    return True
+                return False
             else:
                 self.piese_negre.remove(self.piesa_selectata)
                 self.piese_negre.append(nod)
                 self.piese_totale = self.piese_albe + self.piese_negre
             return True
-
-
-    def check_for_capture(self, nod_curent, nod_aux):
-        if self.piesa_selectata in self.piese_albe and nod_aux in self.piese_negre:
-            self.piese_albe.remove(self.piesa_selectata)
-            self.piese_negre.remove(nod_aux)
-            self.piesa_selectata = nod_curent
-            self.piese_albe.append(self.piesa_selectata)
-            self.piese_totale = self.piese_albe + self.piese_negre
-            return True
-        elif self.piesa_selectata in self.piese_negre and nod_aux in self.piese_albe:
-            self.piese_negre.remove(self.piesa_selectata)
-            self.piese_albe.remove(nod_aux)
-            self.piesa_selectata = nod_curent
-            self.piese_negre.append(self.piesa_selectata)
-            self.piese_totale = self.piese_albe + self.piese_negre
-
-            return True
-        return False
             
+    def check_for_capture2(self, piesa_curenta, piesa_noua):
+        """verific daca piesa noua poate fi capturata si returnez piesa capturata noul loc al piesei curente
+        """
+        if not piesa_noua:
+            return False, False
+        nod_aux1 = copy.deepcopy(piesa_noua)
+        nod_aux2 = copy.deepcopy(piesa_noua)
+        if piesa_curenta.x == piesa_noua.x:
+                nod_aux1.y = nod_aux1.y-60
+                nod_aux2.y = nod_aux2.y+60
+        elif piesa_curenta.y == piesa_noua.y:
+                nod_aux1.x = nod_aux1.x + 60
+                nod_aux2.x = nod_aux2.x - 60
+        if nod_aux1 not in self.piese_totale and [nod_aux1.x, nod_aux1.y] in self.coordonateNoduri:
+            return piesa_noua, nod_aux1 
+        elif nod_aux2 not in self.piese_totale and [nod_aux2.x, nod_aux2.y] in self.coordonateNoduri:
+            return piesa_noua, nod_aux2 
+        return False, False
+            
+ 
 
+    def mutari(self, jucator):
+        l_mutari = []
+        if jucator == "alb":
+            piese_selectate = self.piese_albe
+        else:
+            piese_selectate = self.piese_negre
+
+        for piesa in piese_selectate:
+            captura_posibila, mutari = self.check_for_mutari(piesa, piese_selectate)
+            if captura_posibila == False:
+                for mutare in mutari: 
+                    copie_albe = copy.deepcopy(self.piese_albe)
+                    copie_negre = copy.deepcopy(self.piese_negre)
+                    if jucator == "alb":
+                        copie_albe.remove(piesa)
+                        copie_albe.append(mutare)
+                    else:
+                        copie_negre.remove(piesa)
+                        copie_negre.append(mutare)
+
+                    new_joc = Joc(copie_albe, copie_negre)
+                    l_mutari.append(new_joc)
+            else: 
+                captura, mutare = mutari
+                copie_albe = copy.deepcopy(self.piese_albe)
+                copie_negre = copy.deepcopy(self.piese_negre)
+                if jucator == "alb":
+                    copie_albe.remove(piesa)
+                    copie_albe.append(mutare)
+                    copie_negre.remove(captura)
+                else:
+                    copie_negre.remove(piesa)
+                    copie_negre.append(mutare)
+                    copie_albe.remove(captura)
+                new_joc = Joc(copie_albe, copie_negre)
+                l_mutari = []
+                l_mutari.append(new_joc)
+        return l_mutari
+
+
+    def check_for_mutari(self, piesa, piese_selectate):
+        if piesa == Piesa(90, 510) or piesa == Piesa(210, 510): 
+            directions = [[60,0], [0,60], [-60, 0]]
+        elif piesa == Piesa(90, 90) or piesa == Piesa(210, 90):
+            directions = [[60,0],[-60, 0], [0,-60]] 
+        else:
+            directions = [[60,0], [0,60], [-60, 0], [0,-60]]
+        mutari_valide = []
+        captura = False
+        for dir in directions:
+            new_piesa = Piesa(piesa.x + dir[0], piesa.y + dir[1])
+            if [new_piesa.x, new_piesa.y] in self.coordonateNoduri:
+                if new_piesa not in self.piese_totale:
+                    mutari_valide.append(new_piesa)
+                elif new_piesa not in piese_selectate:
+                    captura, mutare = self.check_for_capture2(piesa, new_piesa)
+                    if captura:
+                        lista = [captura, mutare]
+                        return True, lista
+        return False, mutari_valide
+
+
+    def estimeaza_scor(self, adancime):
+        t_final=self.final()
+        #if (adancime==0):
+        if t_final==self.__class__.JMAX :
+            return (self.__class__.scor_maxim+adancime)
+        elif t_final==self.__class__.JMIN:
+            return (-self.__class__.scor_maxim-adancime)
+        elif t_final=='remiza':
+            return 0
+        else:
+            return (self.linii_deschise(self.__class__.JMAX)- self.linii_deschise(self.__class__.JMIN))
+                
+            
+    def __repr__(self) -> str:
+        return f"PIESE ALBE: {self.piese_albe}\n PIESE NEGRE: {self.piese_negre}"
 
     @classmethod
     def jucator_opus(cls, jucator):
@@ -196,47 +289,3 @@ class Joc:
             return 'remiza'
         else:
             return False
-
-    def mutari(self, jucator):
-        l_mutari=[]
-        for j in range(self.__class__.NR_COLOANE):
-            last_poz = None
-            if self.matr[0][j] != self.__class__.GOL:
-                continue
-            for i in range(self.__class__.NR_LINII):
-                if self.matr[i][j]!=self.__class__.GOL:
-                        last_poz = (i-1,j)
-                        break			 
-            if last_poz is None:
-                last_poz = (self.__class__.NR_LINII-1, j)
-            matr_tabla_noua = copy.deepcopy(self.matr)
-            matr_tabla_noua[last_poz[0]][last_poz[1]] = jucator
-            jn=Joc(matr_tabla_noua)
-            jn.ultima_mutare=(last_poz[0],last_poz[1])
-            l_mutari.append(jn)
-        return l_mutari
-
-
-    #linie deschisa inseamna linie pe care jucatorul mai poate forma o configuratie castigatoare
-    #practic e o linie fara simboluri ale jucatorului opus
-    def linie_deschisa(self,lista, jucator):
-        jo=self.jucator_opus(jucator)
-        #verific daca pe linia data nu am simbolul jucatorului opus
-        if not jo in lista:
-                #return 1
-                return lista.count(jucator)
-        return 0
-        
-    def estimeaza_scor(self, adancime):
-        t_final=self.final()
-        #if (adancime==0):
-        if t_final==self.__class__.JMAX :
-            return (self.__class__.scor_maxim+adancime)
-        elif t_final==self.__class__.JMIN:
-            return (-self.__class__.scor_maxim-adancime)
-        elif t_final=='remiza':
-            return 0
-        else:
-            return (self.linii_deschise(self.__class__.JMAX)- self.linii_deschise(self.__class__.JMIN))
-                
-            
