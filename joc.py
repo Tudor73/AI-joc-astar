@@ -1,4 +1,3 @@
-from tabnanny import check
 import pygame
 import copy
 import math 
@@ -31,7 +30,7 @@ class Joc:
     ]
     JMIN=None
     JMAX=None
-    scor_maxim=0
+    scor_maxim=500
     razaPiesa=20
     width = 400
     height = 700
@@ -46,15 +45,20 @@ class Joc:
         self.coordonateNoduri=[[self.translatie + self.scalare * x for x in nod] for nod in self.noduri]
         self.piese_albe = piese_albe
         self.piese_negre = piese_negre
-        if not self.piese_negre:
+        if self.piese_negre == None:
             self.piese_negre = [Piesa(*self.coordonateNoduri[i]) for i in range(13)]
             for i in range(14,17):
                 self.piese_negre.append(Piesa(*self.coordonateNoduri[i]))
-        if not self.piese_albe:
+            print(self.piese_negre)
+        if self.piese_albe == None:
             self.piese_albe = [Piesa(*self.coordonateNoduri[i]) for i in range(33, len(self.__class__.noduri))]
+            # self.piese_albe = [Piesa(*self.coordonateNoduri[i]) for i in range(33, 34)]
             for i in range(29,32):
+            # for i in range(29,30):
                 self.piese_albe.append(Piesa(*self.coordonateNoduri[i]))
+            print(self.piese_albe)
         self.piese_totale = self.piese_albe + self.piese_negre
+        
 
     def deseneaza_grid(self):
         self.display.fill(self.__class__.culoare_ecran)
@@ -82,6 +86,14 @@ class Joc:
         return False
 
     def gaseste_piesa(self, nod):
+        """cauta piesa de culoare opusa pe coloana sau pe linia piesei curente
+
+        Args:
+            Nod: din coordonate noduri 
+
+        Returns:
+            piesa gasita sau False
+        """
         nod_nou = copy.deepcopy(self.piesa_selectata)
         if self.piesa_selectata.x == nod.x:
             y_dif = self.piesa_selectata.y - nod.y
@@ -94,9 +106,17 @@ class Joc:
         return False
 
     def mutare_valida(self, turn, nod):
+        """functia care verifica daca mutarea userului este valida sau nu 
+            (daca muta, captureaza sau selecteaza alta piesa )
+        Args:
+            turn : spune functiei cu ce piese joaca userul 
+            nod : nodul pe care user ul a dat click 
+
+        Returns:
+            boolean : daca mutarea este valida sau nu 
+        """
         if distEuclid(self.piesa_selectata.x, self.piesa_selectata.y, nod.x, nod.y)  != 60 and distEuclid(self.piesa_selectata.x, self.piesa_selectata.y, nod.x, nod.y)   != 120 :
             return False
-
 
         if nod == self.piesa_selectata:
             self.piesa_selectata = False
@@ -108,8 +128,7 @@ class Joc:
                 return False
             if distEuclid(self.piesa_selectata.x, self.piesa_selectata.y, nod.x, nod.y)  == 120:
                 nod_nou = self.gaseste_piesa(nod)
-                print(nod_nou)
-                captura, mutare = self.check_for_capture2(self.piesa_selectata, nod_nou)
+                captura, mutare = self.check_for_capture(self.piesa_selectata, nod_nou)
                 if captura:
                     self.piese_albe.remove(self.piesa_selectata)
                     self.piese_negre.remove(captura)
@@ -128,7 +147,7 @@ class Joc:
                 return False
             if distEuclid(self.piesa_selectata.x, self.piesa_selectata.y, nod.x, nod.y)   == 120:
                 nod_nou = self.gaseste_piesa(nod)
-                captura, mutare = self.check_for_capture2(self.piesa_selectata, nod_nou)
+                captura, mutare = self.check_for_capture(self.piesa_selectata, nod_nou)
                 if captura:
                     self.piese_negre.remove(self.piesa_selectata)
                     self.piese_albe.remove(captura)
@@ -142,10 +161,17 @@ class Joc:
                 self.piese_totale = self.piese_albe + self.piese_negre
             return True
             
-    def check_for_capture2(self, piesa_curenta, piesa_noua):
-        """verific daca piesa noua poate fi capturata si returnez piesa capturata noul loc al piesei curente
+    def check_for_capture(self, piesa_curenta, piesa_noua):
+        """verific daca piesa noua poate fi capturata si returnez piesa capturata sinoul loc al piesei curente
+
+        Args:
+            piesa_curenta Piesa: _description_
+            piesa_noua Piesa: _description_
+
+        Returns:
+            piesa capturata si noul loc al piesei curente sau false/ false
         """
-        if not piesa_noua:
+        if not piesa_noua or piesa_noua not in self.piese_totale:
             return False, False
         nod_aux1 = copy.deepcopy(piesa_noua)
         nod_aux2 = copy.deepcopy(piesa_noua)
@@ -161,9 +187,16 @@ class Joc:
             return piesa_noua, nod_aux2 
         return False, False
             
- 
-
     def mutari(self, jucator):
+        """
+        genereaza mutarile ai ului 
+
+        Args:
+            jucator : jucatorul curent
+
+        Returns:
+            lista de configuratii posibile ale jocului 
+        """
         l_mutari = []
         if jucator == "alb":
             piese_selectate = self.piese_albe
@@ -202,14 +235,26 @@ class Joc:
                 l_mutari.append(new_joc)
         return l_mutari
 
-
     def check_for_mutari(self, piesa, piese_selectate):
+        """functia verifica pentru o piesa daca are mutare sau captura in toate cele 4 directii posbile 
+
+        Args:
+            piesa : piesa curenta 
+            piese_selectate : piesele ai ului 
+
+        Returns:
+            boolean : daca a capturat sau nu
+            mutari_valide : lista de mutari valide 
+        """
+
+        # edge case uri 
         if piesa == Piesa(90, 510) or piesa == Piesa(210, 510): 
             directions = [[60,0], [0,60], [-60, 0]]
         elif piesa == Piesa(90, 90) or piesa == Piesa(210, 90):
             directions = [[60,0],[-60, 0], [0,-60]] 
         else:
             directions = [[60,0], [0,60], [-60, 0], [0,-60]]
+
         mutari_valide = []
         captura = False
         for dir in directions:
@@ -218,25 +263,11 @@ class Joc:
                 if new_piesa not in self.piese_totale:
                     mutari_valide.append(new_piesa)
                 elif new_piesa not in piese_selectate:
-                    captura, mutare = self.check_for_capture2(piesa, new_piesa)
+                    captura, mutare = self.check_for_capture(piesa, new_piesa)
                     if captura:
                         lista = [captura, mutare]
                         return True, lista
         return False, mutari_valide
-
-
-    def estimeaza_scor(self, adancime):
-        t_final=self.final()
-        #if (adancime==0):
-        if t_final==self.__class__.JMAX :
-            return (self.__class__.scor_maxim+adancime)
-        elif t_final==self.__class__.JMIN:
-            return (-self.__class__.scor_maxim-adancime)
-        elif t_final=='remiza':
-            return 0
-        else:
-            return (self.linii_deschise(self.__class__.JMAX)- self.linii_deschise(self.__class__.JMIN))
-                
             
     def __repr__(self) -> str:
         return f"PIESE ALBE: {self.piese_albe}\n PIESE NEGRE: {self.piese_negre}"
@@ -244,7 +275,6 @@ class Joc:
     @classmethod
     def jucator_opus(cls, jucator):
         return cls.JMAX if jucator==cls.JMIN else cls.JMIN
-
 
     @classmethod
     def initializeaza(cls, display):
@@ -259,33 +289,84 @@ class Joc:
         cls.piesa_selectata = pygame.image.load(os.path.join("images", 'rosu.png'))
         cls.piesa_selectata = pygame.transform.scale(cls.piesa_selectata, (cls.diametru_piesa,cls.diametru_piesa))
 
-    def parcurgere(self, directie):
-        um = self.ultima_mutare # (l,c)
-        culoare = self.matr[um[0]][um[1]]
-        nr_mutari = 0
-        while True:
-            um = (um[0] + directie[0], um[1] + directie[1])
-            if not 0 <= um[0] < self.__class__.NR_LINII or not 0 <= um[1] < self.__class__.NR_COLOANE:
-                break
-            if not self.matr[um[0]][um[1]] == culoare:
-                break
-            nr_mutari += 1
-        return nr_mutari
-        
-    def final(self):
-        if not self.ultima_mutare: #daca e inainte de prima mutare
-            return False
-        directii = [[(0, 1), (0, -1)], [(1, 1), (-1, -1)], [(1, -1), (-1, 1)], [(1, 0), (-1, 0)]]
-        um = self.ultima_mutare
-        rez = False
-        for per_dir in directii:
-            len_culoare = self.parcurgere(per_dir[0]) + self.parcurgere(per_dir[1]) + 1 # +1 pt chiar ultima mutare
-            if len_culoare >= 4:
-                rez = self.matr[um[0]][um[1]]
-     
-        if(rez):
-            return rez
-        elif all(self.__class__.GOL not in x for x in self.matr):
-            return 'remiza'
+    def numar_piese(self, jucator):
+        if jucator == "alb":
+            return len(self.piese_albe)
         else:
-            return False
+            return len(self.piese_negre)
+
+    def estimeaza_scor(self, adancime):
+        """estimeaza scorul dupa numarul de piese ale ambilor jucatori 
+
+        Args:
+            adancime (_type_): _description_
+
+        Returns:
+            scorul : diferenta dintre numarul de piese sau +/- infinit daca e stare finala 
+        """
+        t_final=self.final()
+        #if (adancime==0):
+        if t_final==self.__class__.JMAX :
+            return (self.__class__.scor_maxim+adancime)
+        elif t_final==self.__class__.JMIN:
+            return (-self.__class__.scor_maxim-adancime)
+        elif t_final=='remiza':
+            return 0
+        else: 
+            return self.numar_piese(self.__class__.JMAX) - self.numar_piese(self.__class__.JMIN)        
+
+    def estimeaza_scor2(self, adancime, stare):
+        """estimeaza scorul dupa numarul de capturari posbilie din starea curenta
+            returneaza nnumarul de capturari pentur JMAX sau -numarul de capturari pentru JMIN
+        """
+        t_final=self.final()
+        #if (adancime==0):
+        if t_final==self.__class__.JMAX :
+            return (self.__class__.scor_maxim+adancime)
+        elif t_final==self.__class__.JMIN:
+            return (-self.__class__.scor_maxim-adancime)
+        elif t_final=='remiza':
+            return 0
+        for mutare in stare.mutari_posibile:
+            piese_selectate = []
+            numar_capturari = 0
+            if mutare.j_curent == "alb":
+                piese_selectate = mutare.tabla_joc.piese_albe
+            else:
+                piese_selectate = mutare.tabla_joc.piese_negre
+            for piesa in piese_selectate:
+                if self.check_for_capture(piesa, Piesa(piesa.x + 60, piesa.y)):
+                   numar_capturari += 1
+                if self.check_for_capture(piesa, Piesa(piesa.x - 60, piesa.y)):
+                   numar_capturari += 1
+                if self.check_for_capture(piesa, Piesa(piesa.x, piesa.y + 60)):
+                   numar_capturari += 1
+                if self.check_for_capture(piesa, Piesa(piesa.x, piesa.y) - 60):
+                   numar_capturari += 1
+        if mutare.j_curent == Joc.JMAX:
+            return numar_capturari
+        else:
+            return -numar_capturari
+
+
+
+    def final(self):
+        """ 
+        verifica daca starea este finala 
+        """
+        rez = False
+        if self.piese_albe == []:
+            rez = "negru"
+        elif self.piese_negre == []:
+            rez = "alb"
+        return rez
+                
+    def marcheaza_castigator(self, castigator):
+        if castigator == "negru":
+            piese_selectate = self.piese_negre
+        else:
+            piese_selectate = self.piese_albe
+
+        for piesa in piese_selectate:
+            piesa.deseneaza_piesa(self.__class__.display, self.__class__.piesa_selectata)
+        pygame.display.update()
