@@ -51,10 +51,10 @@ class Joc:
                 self.piese_negre.append(Piesa(*self.coordonateNoduri[i]))
             print(self.piese_negre)
         if self.piese_albe == None:
-            self.piese_albe = [Piesa(*self.coordonateNoduri[i]) for i in range(33, len(self.__class__.noduri))]
-            # self.piese_albe = [Piesa(*self.coordonateNoduri[i]) for i in range(33, 34)]
-            for i in range(29,32):
-            # for i in range(29,30):
+            # self.piese_albe = [Piesa(*self.coordonateNoduri[i]) for i in range(33, len(self.__class__.noduri))]
+            self.piese_albe = [Piesa(*self.coordonateNoduri[i]) for i in range(33, 34)]
+            # for i in range(29,32):
+            for i in range(29,30):
                 self.piese_albe.append(Piesa(*self.coordonateNoduri[i]))
             print(self.piese_albe)
         self.piese_totale = self.piese_albe + self.piese_negre

@@ -106,10 +106,15 @@ def main():
     joc_curent.deseneaza_grid()
     ok = False
     pygame.display.update()	
+    t_start = time.time()
+    numar_mutari = 0
     while True:
         for ev in pygame.event.get():
             if ev.type == pygame.QUIT:
                 Stare.afiseaza_stats()
+                t_final = time.time()
+                print(f"Durata joc: {t_final- t_start} secunde" )
+                print(f" Numar mutari: {numar_mutari}")
                 pygame.quit()
                 sys.exit()
             if stare_curenta.j_curent == Joc.JMIN: # randul userului 
@@ -135,7 +140,7 @@ def main():
                                 joc_nou.deseneaza_grid()
                                 t_dupa=time.time()
                                 print(f"Timp mutare {t_dupa - t_inainte} secunde")
-
+                                numar_mutari += 1
                             elif joc_curent.piesa_selectata:
                                 if Joc.JMIN == "alb":
                                     piese_selectate = joc_curent.piese_albe
@@ -168,19 +173,26 @@ def main():
                 stare_curenta.tabla_joc.deseneaza_grid()
                 stare_curenta.adancime = ADANCIME_MAX
                 joc_curent = stare_curenta.tabla_joc
-
+                numar_mutari += 1
             # verific daca sunt intr-o stare finala     
             final = stare_curenta.tabla_joc.final()
             if final:
                 if ok == False:
+                    Stare.afiseaza_stats()
+                    t_final = time.time()
                     print("A castigat " + final)
+                    print(f"Durata joc: {t_final- t_start} secunde" )
+                    print(f" Numar mutari: {numar_mutari}")
                     ok = True
                 stare_curenta.tabla_joc.marcheaza_castigator(final)
-                Stare.afiseaza_stats()
                 event = pygame.event.wait()
                 if event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_p:
-                        pass    
+                    if event.key == pygame.K_r:
+                        Joc.initializeaza(ecran)
+                        Stare.intializeza()
+                        joc_curent = Joc()
+                        stare_curenta = Stare(joc_curent, Joc.JMIN, ADANCIME_MAX) # stare intiala 
+                        joc_curent.deseneaza_grid()
                     else:
                         pygame.quit()
                         sys.exit()                 

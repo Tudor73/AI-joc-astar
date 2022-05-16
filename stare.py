@@ -61,7 +61,11 @@ class Stare:
         print(f"Minim: {cls.numar_noduri_generate[0]}")
         print(f"Mediu: {numar_mediu}")
         print(f"Median: {median(cls.numar_noduri_generate)}")
-            
+
+    @classmethod
+    def intializeza(cls):
+        cls.numar_noduri_generate = []
+        cls.timpi_gandire = []        
 """ Algoritmul MinMax """
 
 def min_max(stare : Stare) -> Stare:
